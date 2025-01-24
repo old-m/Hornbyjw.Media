@@ -27,6 +27,7 @@ namespace Hornbyjw.Media.Controllers
         /// <returns>A stream of the requested blob</returns>
         [Route("{**assetPath}")]
         [HttpGet]
+        [ResponseCache(Duration = 2629746, Location = ResponseCacheLocation.Any)]
         public async Task<IActionResult> Get(string assetPath)
         {
             var mimeType = CheckValidExtensionAndReturnMimeType(Path.GetExtension(assetPath));
