@@ -28,7 +28,16 @@ namespace Hornbyjw.Media.Services
         {
             _logger = logger;
             var section = configuration.GetSection("MediaCache");
-            _cacheRoot = section.GetValue<string>("CacheDirectory") ?? Path.Combine(Directory.GetCurrentDirectory(), "media-cache");
+            var configured = section.GetValue<string>("CacheDirectory");
+            if (string.IsNullOrEmpty(configured))
+            {
+                _cacheRoot = Path.Combine(Directory.GetCurrentDirectory(), "media-cache");
+            }
+            else
+            {
+                // If a relative path is provided in configuration, make it absolute based on current directory
+                _cacheRoot = Path.IsPathRooted(configured) ? configured : Path.Combine(Directory.GetCurrentDirectory(), configured);
+            }
             var ttlSeconds = section.GetValue<int?>("TTLSeconds") ?? 24 * 60 * 60; // default 1 day
             _ttl = TimeSpan.FromSeconds(ttlSeconds);
 
@@ -57,7 +66,7 @@ namespace Hornbyjw.Media.Services
                 if (age <= _ttl)
                 {
                     _logger.LogDebug("Cache hit for {AssetPath}", assetPath);
-                    return finalPath;
+                    return Path.GetFullPath(finalPath);
                 }
                 else
                 {
@@ -78,7 +87,7 @@ namespace Hornbyjw.Media.Services
                         if (age <= _ttl)
                         {
                             _logger.LogDebug("Cache hit (after wait) for {AssetPath}", assetPath);
-                            return finalPath;
+                            return Path.GetFullPath(finalPath);
                         }
                 }
 
@@ -97,7 +106,7 @@ namespace Hornbyjw.Media.Services
                     File.Move(tempPath, finalPath);
 
                     // Return the cached file path
-                    return finalPath;
+                    return Path.GetFullPath(finalPath);
                 }
                 catch
                 {
