@@ -3,21 +3,24 @@ namespace Hornbyjw.Media.Controllers
     using Azure.Storage.Blobs;
     using Azure.Storage.Blobs.Specialized;
     using Microsoft.AspNetCore.Mvc;
+    using Hornbyjw.Media.Services;
     using System.IO;
 
     [ApiController]
     [Route("media")]
     public class MediaController : ControllerBase
     {
-        private readonly ILogger<MediaController> _logger;
-        private readonly BlobServiceClient _blobServiceClient;
-        private readonly IConfiguration _configuration;
+    private readonly ILogger<MediaController> _logger;
+    private readonly BlobServiceClient _blobServiceClient;
+    private readonly IConfiguration _configuration;
+    private readonly IFileBlobCache _fileBlobCache;
 
-        public MediaController(ILogger<MediaController> logger, BlobServiceClient blobServiceClient, IConfiguration configuration)
+        public MediaController(ILogger<MediaController> logger, BlobServiceClient blobServiceClient, IConfiguration configuration, IFileBlobCache fileBlobCache)
         {
             _logger = logger;
             _blobServiceClient = blobServiceClient;
             _configuration = configuration;
+            _fileBlobCache = fileBlobCache;
         }
 
         /// <summary>
@@ -36,12 +39,14 @@ namespace Hornbyjw.Media.Controllers
             {
                 var container = _blobServiceClient.GetBlobContainerClient(_configuration.GetValue<string>("ContainerName"));
 
-                // Download
+                // Download or serve from cache
                 var blobClient = container.GetBlockBlobClient(assetPath);
                 if (await blobClient.ExistsAsync())
                 {
-                    var blobStream = await blobClient.OpenReadAsync().ConfigureAwait(false);
-                    return new FileStreamResult(blobStream, mimeType);
+                    // Use local file cache to speed repeated reads. This returns the cached file path.
+                    var cachedPath = await _fileBlobCache.GetOrDownloadAsync(assetPath, blobClient).ConfigureAwait(false);
+                    // Return a PhysicalFile so the framework opens and disposes the file stream and supports ranges
+                    return PhysicalFile(cachedPath, mimeType, enableRangeProcessing: true);
                 }
             }
             return BadRequest("Requested a bad path.");

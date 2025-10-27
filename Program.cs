@@ -1,11 +1,18 @@
 using Azure.Identity;
 using Microsoft.Extensions.Azure;
+using Hornbyjw.Media.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 builder.Configuration.AddEnvironmentVariables();
+
+// Response caching middleware - honors [ResponseCache] attributes and cache-control headers
+builder.Services.AddResponseCaching();
+
+// File-based blob cache for faster repeated reads
+builder.Services.AddSingleton<IFileBlobCache, FileBlobCache>();
 
 builder.Services.Configure<Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration>(config =>
 {
@@ -37,6 +44,9 @@ builder.Services.AddAzureClients(async clientBuilder =>
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+
+// Enable server-side response caching (honours [ResponseCache] on controllers)
+app.UseResponseCaching();
 
 app.UseAuthorization();
 
