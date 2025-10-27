@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Custom folders we want to ignore
+media-cache/
+
 # User-specific files
 *.rsuser
 *.suo
