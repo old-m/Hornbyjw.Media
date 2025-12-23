@@ -1,5 +1,7 @@
 Hornbyjw.Media
 
+As used on my website: [https://blog.hornbyjw.tech/](https://blog.hornbyjw.tech/)
+
 A tiny media server that exposes a single endpoint to serve blobs from Azure Blob Storage to a web client. It is intended to back a static web app so you don't have to bundle every media asset with the frontend.
 
 ## Quick summary
